@@ -191,4 +191,4 @@ else
 	fi
 fi
 
-echo "$res"
+echo "4.19.323"
