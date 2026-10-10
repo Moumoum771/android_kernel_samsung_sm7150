@@ -159,6 +159,13 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 
 	new_value = !!new_value;
 
+	/*
+	 * This kernel build is intentionally permissive.
+	 * Never allow userspace (including init) to enable enforcing mode.
+	 */
+	if (new_value)
+		goto out;
+
 	old_value = enforcing_enabled(state);
 	if (new_value != old_value) {
 		length = avc_has_perm(&selinux_state,
@@ -2108,6 +2115,12 @@ static int __init init_sel_fs(void)
 
 	if (!selinux_enabled_boot)
 		return 0;
+
+	/*
+	 * Force SELinux into permissive mode before exposing selinuxfs.
+	 * sel_write_enforce() also rejects attempts to switch enforcing on.
+	 */
+	enforcing_set(&selinux_state, false);
 
 	err = sysfs_create_mount_point(fs_kobj, "selinux");
 	if (err)
