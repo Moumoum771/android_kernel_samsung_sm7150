@@ -1196,29 +1196,27 @@ SYSCALL_DEFINE1(newuname, struct new_utsname __user *, name)
 
 	down_read(&uts_sem);
 	memcpy(&tmp, utsname(), sizeof(tmp));
+
 #ifndef CONFIG_FAKE_UNAME_NONE
 	if (!strncmp(current->comm, "bpfloader", 9) ||
 	    !strncmp(current->comm, "netbpfload", 10) ||
 	    !strncmp(current->comm, "netd", 4) ||
 	    !strncmp(current->comm, "uprobestats", 11)) {
-		if (current_uid().val == 0 && !legacy_ebpf &&
-		    !is_aosp) {
 #if defined(CONFIG_FAKE_UNAME_5_4)
-			strcpy(tmp.release, "5.4.200");
+		strscpy(tmp.release, "5.4.200", sizeof(tmp.release));
 #elif defined(CONFIG_FAKE_UNAME_5_10)
-			strcpy(tmp.release, "5.10.200");
+		strscpy(tmp.release, "5.10.200", sizeof(tmp.release));
 #elif defined(CONFIG_FAKE_UNAME_5_15)
-			strcpy(tmp.release, "5.15.200");
+		strscpy(tmp.release, "5.15.200", sizeof(tmp.release));
 #elif defined(CONFIG_FAKE_UNAME_6_1)
-			strcpy(tmp.release, "6.1.200");
+		strscpy(tmp.release, "6.1.200", sizeof(tmp.release));
 #elif defined(CONFIG_FAKE_UNAME_6_6)
-			strcpy(tmp.release, "6.6.200");
+		strscpy(tmp.release, "6.6.200", sizeof(tmp.release));
 #elif defined(CONFIG_FAKE_UNAME_6_12)
-			strcpy(tmp.release, "6.12.200");
+		strscpy(tmp.release, "6.12.200", sizeof(tmp.release));
 #endif
-			pr_debug("fake uname: %s/%d release=%s\n",
-				 current->comm, current->pid, tmp.release);
-		}
+		pr_info("fake uname: %s/%d release=%s\n",
+			current->comm, current->pid, tmp.release);
 	}
 #endif
 #ifdef CONFIG_KSU_SUSFS_SPOOF_UNAME
