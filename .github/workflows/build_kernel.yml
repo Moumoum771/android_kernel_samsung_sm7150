@@ -129,13 +129,3 @@ jobs:
         with:
           name: release-notes
           path: ./
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: version.txt
-          tag_name: "${{ needs.prepare.outputs.release_ts }}"
-          name: "PrimeKernel-${{ needs.prepare.outputs.release_ts }}"
-          files: artifacts/*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
