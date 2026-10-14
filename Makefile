@@ -2,7 +2,7 @@
 VERSION = 4
 PATCHLEVEL = 14
 SUBLEVEL = 357
-EXTRAVERSION = -openela
+EXTRAVERSION = -compatibility
 NAME = Petit Gorille
 
 # *DOCUMENTATION*
