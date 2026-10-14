@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # global properties
 properties() { '
-kernel.string=Prime Kernel by pascua28 @ xda-developers
+kernel.string=BrBL-Kernel by Brian & Blaze
 do.devicecheck=1
 do.modules=0
 do.systemless=1
