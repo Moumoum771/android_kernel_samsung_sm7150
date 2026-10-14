@@ -10,8 +10,8 @@ do.modules=0
 do.systemless=1
 do.cleanup=1
 do.cleanuponabort=0
-device.name1=
-device.name2=
+device.name1=a70q
+device.name2=a70
 device.name3=
 device.name4=
 device.name5=
@@ -46,12 +46,6 @@ oneui=$(file_getprop /system/build.prop ro.build.version.oneui);
 
 patch_cmdline "android.is_aosp" "";
 
-if [ "$android" -lt 34 ]; then
-   ui_print "";
-   ui_print "Android 13 detected!";
-   patch_cmdline "android.legacy_ebpf=" "android.legacy_ebpf=1";
-fi
-
 if [ -z "$device" ] && [ -z "$android" ]; then
     ui_print " ";
     ui_print "Skipping ROM detection...";
@@ -72,6 +66,15 @@ else
         patch_cmdline "android.is_aosp" "android.is_aosp=1";
     fi
 fi
+
+# Patch fstab, this will change systems filesystem type from erofs to ext4
+for fstab in $ramdisk/fstab.*; do
+    [ -f "$fstab" ] || continue
+    if grep -q "erofs" "$fstab"; then
+        sed -i '/\/system/s/erofs/ext4/' "$fstab"
+        ui_print " - Patched $fstab: system erofs -> ext4";
+    fi
+done
 
 write_boot;
 ## end boot install
