@@ -1,4 +1,4 @@
-name: Build prime kernel
+name: Build
 
 on:
   workflow_dispatch:
@@ -92,7 +92,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
-          name: PrimeKernel-${{ matrix.device.name }}-${{ needs.prepare.outputs.release_ts }}
+          name: BrBLKernel-${{ matrix.device.name }}-${{ needs.prepare.outputs.release_ts }}
           path: AnyKernel3/
 
       - name: Upload release notes
@@ -117,7 +117,7 @@ jobs:
       - name: Zip build artifacts
         run: |
           cd artifacts
-          for dir in PrimeKernel-*; do
+          for dir in BrBLKernel-*; do
             (
               cd "$dir"
               zip -r "../${dir}.zip" .
