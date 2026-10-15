@@ -65,13 +65,14 @@ msm_drm-y := \
 	sde_edid_parser.o \
 	sde_hdcp_1x.o \
 	sde_hdcp_2x.o \
+	oplus_backlight_node.o
 
--$(CONFIG_DEBUG_FS) += sde_dbg.o \
+msm_drm-$(CONFIG_DEBUG_FS) += sde_dbg.o \
 	sde_dbg_evtlog.o
 
--$(CONFIG_DRM_MSM_KCAL_CTRL) += sde/sde_hw_kcal_ctrl.o
+msm_drm-$(CONFIG_DRM_MSM_KCAL_CTRL) += sde/sde_hw_kcal_ctrl.o
 
--$(CONFIG_DRM_MSM_HDMI) += hdmi/hdmi.o \
+msm_drm-$(CONFIG_DRM_MSM_HDMI) += hdmi/hdmi.o \
 	hdmi/hdmi_audio.o \
 	hdmi/hdmi_bridge.o \
 	hdmi/hdmi_connector.o \
@@ -81,14 +82,14 @@ msm_drm-y := \
 	hdmi/hdmi_phy_8x60.o \
 	hdmi/hdmi_phy_8x74.o \
 
--$(CONFIG_DRM_MSM_EDP) += edp/edp.o \
+msm_drm-$(CONFIG_DRM_MSM_EDP) += edp/edp.o \
 	edp/edp_aux.o \
 	edp/edp_bridge.o \
 	edp/edp_connector.o \
 	edp/edp_ctrl.o \
 	edp/edp_phy.o \
 
--$(CONFIG_DRM_MSM_MDP5) += mdp/mdp_format.o \
+msm_drm-$(CONFIG_DRM_MSM_MDP5) += mdp/mdp_format.o \
 	mdp/mdp_kms.o \
 	mdp/mdp5/mdp5_cfg.o \
 	mdp/mdp5/mdp5_ctl.o \
@@ -102,7 +103,7 @@ msm_drm-y := \
 	mdp/mdp5/mdp5_plane.o \
 	mdp/mdp5/mdp5_smp.o \
 
--$(CONFIG_DRM_SDE_RSC) += sde_rsc.o \
+msm_drm-$(CONFIG_DRM_SDE_RSC) += sde_rsc.o \
 	sde_rsc_hw.o \
 	sde_rsc_hw_v3.o \
 
@@ -153,6 +154,7 @@ msm_drm-$(CONFIG_DRM_MSM_DSI_28NM_PHY) += dsi/pll/dsi_pll_28nm.o
 msm_drm-$(CONFIG_DRM_MSM_DSI_28NM_8960_PHY) += dsi/pll/dsi_pll_28nm_8960.o
 msm_drm-$(CONFIG_DRM_MSM_DSI_14NM_PHY) += dsi/pll/dsi_pll_14nm.o
 endif
+
 msm_drm-$(CONFIG_DRM_MSM_DSI_STAGING) += dsi-staging/dsi_phy.o \
 				dsi-staging/dsi_pwr.o \
 				dsi-staging/dsi_phy.o \
@@ -234,7 +236,6 @@ msm_drm-$(CONFIG_DRM_MSM) += \
 	msm_debugfs.o
 
 obj-$(CONFIG_DRM_MSM)	+= msm_drm.o
-obj-$(CONFIG_DRM_MSM)	+= oplus_backlight_node.o
 
 ifeq ($(CONFIG_DISPLAY_SAMSUNG),y)
 obj-y += samsung/
@@ -243,4 +244,3 @@ obj-y += samsung_lego/
 else
 obj-y += samsung/
 endif
-
