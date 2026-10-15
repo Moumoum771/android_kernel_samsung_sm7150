@@ -26,6 +26,7 @@
 #include <linux/dma-buf.h>
 #include <linux/fb.h>
 #include <linux/init.h>
+#include <linux/kobject.h>
 #include <linux/ioport.h>
 #include <linux/kernel.h>
 #include <linux/memory.h>
@@ -323,6 +324,82 @@ static struct led_classdev backlight_led = {
 	.brightness_get = mdss_fb_get_bl_brightness,
 	.max_brightness = MDSS_MAX_BL_BRIGHTNESS,
 };
+
+static struct kobject *oplus_backlight_kobj;
+
+static int oplus_backlight_cover(int value)
+{
+	int input_min = 222, input_max = 8191;
+	int input_span = 7969, out_span = 254;
+	int output_min = 1, output_max = 255;
+
+	if (value <= 0)
+		return 0;
+	if (value <= input_min)
+		return output_min;
+	if (value >= input_max)
+		return output_max;
+
+	return (((value - input_min) * out_span * 2 + input_span) /
+		(input_span * 2)) + output_min;
+}
+
+static ssize_t oplus_backlight_store(struct kobject *kobj,
+	struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int value = 0;
+
+	if (sscanf(buf, "%d", &value) != 1)
+		return -EINVAL;
+
+	value = oplus_backlight_cover(value);
+	if (lcd_backlight_registered) {
+		enum led_brightness brightness = (enum led_brightness)value;
+
+		mdss_fb_set_bl_brightness(&backlight_led, brightness);
+	}
+
+	return count;
+}
+
+static struct kobj_attribute oplus_backlight_attr =
+	__ATTR(oplus_backlight, 0200, NULL, oplus_backlight_store);
+
+static int oplus_backlight_sysfs_create(void)
+{
+	int rc;
+
+	if (oplus_backlight_kobj)
+		return 0;
+
+	oplus_backlight_kobj = kobject_create_and_add("touchpanel", NULL);
+	if (!oplus_backlight_kobj) {
+		pr_err("failed to create /sys/touchpanel kobject\\n");
+		return -ENOMEM;
+	}
+
+	rc = sysfs_create_file(oplus_backlight_kobj,
+			       &oplus_backlight_attr.attr);
+	if (rc) {
+		pr_err("failed to create /sys/touchpanel/oplus_backlight, rc=%d\\n",
+		       rc);
+		kobject_put(oplus_backlight_kobj);
+		oplus_backlight_kobj = NULL;
+		return rc;
+	}
+
+	return 0;
+}
+
+static void oplus_backlight_sysfs_remove(void)
+{
+	if (!oplus_backlight_kobj)
+		return;
+
+	sysfs_remove_file(oplus_backlight_kobj, &oplus_backlight_attr.attr);
+	kobject_put(oplus_backlight_kobj);
+	oplus_backlight_kobj = NULL;
+}
 
 static ssize_t mdss_fb_get_type(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -1360,8 +1437,11 @@ static int mdss_fb_probe(struct platform_device *pdev)
 		backlight_led.max_brightness = mfd->panel_info->brightness_max;
 		if (led_classdev_register(&pdev->dev, &backlight_led))
 			pr_err("led_classdev_register failed\n");
-		else
+		else {
 			lcd_backlight_registered = 1;
+			if (oplus_backlight_sysfs_create())
+				pr_err("oplus backlight sysfs registration failed\\n");
+		}
 	}
 
 	mdss_fb_init_panel_modes(mfd, pdata);
@@ -1462,6 +1542,7 @@ static int mdss_fb_remove(struct platform_device *pdev)
 	unregister_framebuffer(mfd->fbi);
 
 	if (lcd_backlight_registered) {
+		oplus_backlight_sysfs_remove();
 		lcd_backlight_registered = 0;
 		led_classdev_unregister(&backlight_led);
 	}
