@@ -477,6 +477,11 @@ struct backlight_device *backlight_device_get_by_type(enum backlight_type type)
 }
 EXPORT_SYMBOL(backlight_device_get_by_type);
 
+static int backlight_name_match(struct device *dev, const void *data)
+{
+    return strcmp(dev_name(dev), (const char *)data) == 0;
+}
+
 /*
  * backlight_device_get_by_name - find a backlight device by name
  * @name: backlight device name
@@ -491,7 +496,8 @@ struct backlight_device *backlight_device_get_by_name(const char *name)
     if (!name)
         return NULL;
 
-    dev = class_find_device_by_name(backlight_class, name);
+    dev = class_find_device(backlight_class, NULL, name,
+                            backlight_name_match);
     if (!dev)
         return NULL;
 
