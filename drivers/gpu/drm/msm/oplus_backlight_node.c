@@ -18,14 +18,7 @@ static struct kobject *touchpanel_kobj;
  */
 static struct backlight_device *find_panel_bl(void)
 {
-	struct device *dev;
-
-	dev = class_find_device_by_name(
-		bd_class, OPLUS_BL_DEVICE);
-	if (!dev)
-		return NULL;
-
-	return to_backlight_device(dev);
+        return backlight_device_get_by_name(OPLUS_BL_DEVICE);
 }
 
 static ssize_t oplus_backlight_show(struct kobject *kobj,
