@@ -6,80 +6,153 @@
 #include <linux/string.h>
 #include <linux/backlight.h>
 #include <linux/math64.h>
+#include <linux/errno.h>
 
-#define OPLUS_BL_MAX 8191 
+#define OPLUS_BL_MAX 8191U
+#define OPLUS_BL_DEVICE "panel0-backlight"
 
 static struct kobject *touchpanel_kobj;
 
 static int match_name(struct device *dev, const void *data)
 {
-	return !strcmp(dev_name(dev), (const char *)data);
+	return strcmp(dev_name(dev), (const char *)data) == 0;
 }
 
+/*
+ * Return a backlight device with a held device reference.
+ * The caller must put_device(&bd->dev) when finished.
+ */
 static struct backlight_device *find_panel_bl(void)
 {
 	struct backlight_device *any;
+	struct backlight_device *bd = NULL;
 	struct device *dev;
 
 	any = backlight_device_get_by_type(BACKLIGHT_RAW);
 	if (!any)
 		return NULL;
+
 	dev = class_find_device(any->dev.class, NULL,
-				"panel0-backlight", match_name);
+				OPLUS_BL_DEVICE, match_name);
+
+	/* Release the reference acquired by backlight_device_get_by_type(). */
+	put_device(&any->dev);
+
 	if (!dev)
 		return NULL;
-	put_device(dev);
-	return to_backlight_device(dev);
+
+	/*
+	 * class_find_device() returns a referenced device.
+	 * Keep that reference for the caller.
+	 */
+	bd = to_backlight_device(dev);
+
+	return bd;
 }
 
 static ssize_t oplus_backlight_show(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
+				    struct kobj_attribute *attr,
+				    char *buf)
 {
-	struct backlight_device *bd = find_panel_bl();
-	u64 v;
+	struct backlight_device *bd;
+	u64 value;
+	unsigned int max_brightness;
 
+	bd = find_panel_bl();
 	if (!bd)
 		return -ENODEV;
-	v = (u64)bd->props.brightness * OPLUS_BL_MAX;
-	do_div(v, bd->props.max_brightness ? bd->props.max_brightness : 1);
-	return scnprintf(buf, PAGE_SIZE, "%llu\n", v);
+
+	max_brightness = bd->props.max_brightness;
+	if (!max_brightness) {
+		put_device(&bd->dev);
+		return -EINVAL;
+	}
+
+	value = (u64)bd->props.brightness * OPLUS_BL_MAX;
+	do_div(value, max_brightness);
+
+	put_device(&bd->dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%llu\n",
+			 (unsigned long long)value);
 }
 
 static ssize_t oplus_backlight_store(struct kobject *kobj,
-		struct kobj_attribute *attr, const char *buf, size_t count)
+				     struct kobj_attribute *attr,
+				     const char *buf,
+				     size_t count)
 {
-	struct backlight_device *bd = find_panel_bl();
-	unsigned int val;
+	struct backlight_device *bd;
+	unsigned int value;
+	unsigned int max_brightness;
 	u64 scaled;
 
+	/*
+	 * Parse before looking up the device, so parsing errors
+	 * cannot leak a device reference.
+	 */
+	if (kstrtouint(buf, 10, &value)) {
+		pr_err("oplus_backlight: invalid input: '%.*s'\n",
+		       (int)count, buf);
+		return -EINVAL;
+	}
+
+	if (value > OPLUS_BL_MAX)
+		value = OPLUS_BL_MAX;
+
+	bd = find_panel_bl();
 	if (!bd)
 		return -ENODEV;
-	if (kstrtouint(buf, 10, &val))
-		return -EINVAL;
-	if (val > OPLUS_BL_MAX)
-		val = OPLUS_BL_MAX;
 
-	scaled = (u64)val * bd->props.max_brightness;
+	max_brightness = bd->props.max_brightness;
+	if (!max_brightness) {
+		put_device(&bd->dev);
+		return -EINVAL;
+	}
+
+	scaled = (u64)value * max_brightness;
 	do_div(scaled, OPLUS_BL_MAX);
-	if (!scaled && val)
+
+	if (value && !scaled)
 		scaled = 1;
 
+	pr_debug("oplus_backlight: requested=%u scaled=%llu max=%u\n",
+		 value, (unsigned long long)scaled, max_brightness);
+
+	/*
+	 * Keep the device reference held while updating brightness.
+	 * This API's return type can vary between kernel trees, so
+	 * do not assume it returns an error code.
+	 */
 	backlight_device_set_brightness(bd, (unsigned long)scaled);
+
+	put_device(&bd->dev);
+
 	return count;
 }
 
 static struct kobj_attribute oplus_backlight_attr =
-	__ATTR(oplus_backlight, 0664, oplus_backlight_show, oplus_backlight_store);
+	__ATTR(oplus_backlight, 0664,
+	       oplus_backlight_show, oplus_backlight_store);
 
 static int __init oplus_backlight_node_init(void)
 {
+	int ret;
+
 	touchpanel_kobj = kobject_create_and_add("touchpanel", NULL);
 	if (!touchpanel_kobj)
 		return -ENOMEM;
-	if (sysfs_create_file(touchpanel_kobj, &oplus_backlight_attr.attr)) {
+
+	ret = sysfs_create_file(touchpanel_kobj,
+				&oplus_backlight_attr.attr);
+	if (ret) {
 		kobject_put(touchpanel_kobj);
 		touchpanel_kobj = NULL;
+		return ret;
 	}
+
+	pr_info("oplus_backlight: registered successfully\n");
 	return 0;
 }
+
 device_initcall(oplus_backlight_node_init);
