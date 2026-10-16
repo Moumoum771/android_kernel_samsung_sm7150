@@ -91,11 +91,32 @@ static ssize_t oplus_backlight_store(struct kobject *kobj,
 	 * Parse before looking up the device, so parsing errors
 	 * cannot leak a device reference.
 	 */
-	if (kstrtouint(buf, 10, &value)) {
-		pr_err("oplus_backlight: invalid input: '%.*s'\n",
-		       (int)count, buf);
-		return -EINVAL;
-	}
+	{
+        char input[32];
+        size_t len = count;
+
+        if (!len || len >= sizeof(input))
+                return -EINVAL;
+
+        memcpy(input, buf, len);
+        input[len] = '\0';
+
+        /* Remove the sysfs newline. */
+        if (len && input[len - 1] == '\n')
+                input[--len] = '\0';
+
+        /* Accept ColorOS values such as 8191.0. */
+        if (len >= 2 && input[len - 2] == '.' &&
+            input[len - 1] == '0') {
+                input[len - 2] = '\0';
+        }
+
+        if (kstrtouint(input, 10, &value)) {
+                pr_err("oplus_backlight: invalid input: '%.*s'\n",
+                       (int)count, buf);
+                return -EINVAL;
+        }
+}
 
 	if (value > OPLUS_BL_MAX)
 		value = OPLUS_BL_MAX;
