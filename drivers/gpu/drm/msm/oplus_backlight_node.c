@@ -25,7 +25,6 @@ static int match_name(struct device *dev, const void *data)
 static struct backlight_device *find_panel_bl(void)
 {
 	struct backlight_device *any;
-	struct backlight_device *bd = NULL;
 	struct device *dev;
 
 	any = backlight_device_get_by_type(BACKLIGHT_RAW);
@@ -45,9 +44,7 @@ static struct backlight_device *find_panel_bl(void)
 	 * class_find_device() returns a referenced device.
 	 * Keep that reference for the caller.
 	 */
-	bd = to_backlight_device(dev);
-
-	return bd;
+	return to_backlight_device(dev);
 }
 
 static ssize_t oplus_backlight_show(struct kobject *kobj,
@@ -86,37 +83,30 @@ static ssize_t oplus_backlight_store(struct kobject *kobj,
 	unsigned int value;
 	unsigned int max_brightness;
 	u64 scaled;
+	char input[32];
+	size_t len = count;
 
-	/*
-	 * Parse before looking up the device, so parsing errors
-	 * cannot leak a device reference.
-	 */
-	{
-        char input[32];
-        size_t len = count;
+	/* Parse the input before looking up the device. */
+	if (!len || len >= sizeof(input))
+		return -EINVAL;
 
-        if (!len || len >= sizeof(input))
-                return -EINVAL;
+	memcpy(input, buf, len);
+	input[len] = '\0';
 
-        memcpy(input, buf, len);
-        input[len] = '\0';
+	/* Remove the sysfs newline. */
+	if (len && input[len - 1] == '\n')
+		input[--len] = '\0';
 
-        /* Remove the sysfs newline. */
-        if (len && input[len - 1] == '\n')
-                input[--len] = '\0';
+	/* Accept ColorOS values such as 8191.0. */
+	if (len >= 2 && input[len - 2] == '.' &&
+	    input[len - 1] == '0') {
+		input[len - 2] = '\0';
+	}
 
-        /* Accept ColorOS values such as 8191.0. */
-        if (len >= 2 && input[len - 2] == '.' &&
-            input[len - 1] == '0') {
-                input[len - 2] = '\0';
-        }
-
-        if (kstrtouint(input, 10, &value)) {
-                pr_err("oplus_backlight: invalid input: '%.*s'\n",
-                       (int)count, buf);
-                return -EINVAL;
-        }
-}
+	if (kstrtouint(input, 10, &value)) {
+		pr_err("oplus_backlight: invalid input\n");
+		return -EINVAL;
+	}
 
 	if (value > OPLUS_BL_MAX)
 		value = OPLUS_BL_MAX;
@@ -131,6 +121,7 @@ static ssize_t oplus_backlight_store(struct kobject *kobj,
 		return -EINVAL;
 	}
 
+	/* Convert the ColorOS 0..8191 range to native brightness. */
 	scaled = (u64)value * max_brightness;
 	do_div(scaled, OPLUS_BL_MAX);
 
@@ -140,11 +131,6 @@ static ssize_t oplus_backlight_store(struct kobject *kobj,
 	pr_debug("oplus_backlight: requested=%u scaled=%llu max=%u\n",
 		 value, (unsigned long long)scaled, max_brightness);
 
-	/*
-	 * Keep the device reference held while updating brightness.
-	 * This API's return type can vary between kernel trees, so
-	 * do not assume it returns an error code.
-	 */
 	backlight_device_set_brightness(bd, (unsigned long)scaled);
 
 	put_device(&bd->dev);
