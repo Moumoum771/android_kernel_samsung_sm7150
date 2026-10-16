@@ -24,26 +24,13 @@ static int match_name(struct device *dev, const void *data)
  */
 static struct backlight_device *find_panel_bl(void)
 {
-	struct backlight_device *any;
 	struct device *dev;
 
-	any = backlight_device_get_by_type(BACKLIGHT_RAW);
-	if (!any)
-		return NULL;
-
-	dev = class_find_device(any->dev.class, NULL,
-				OPLUS_BL_DEVICE, match_name);
-
-	/* Release the reference acquired by backlight_device_get_by_type(). */
-	put_device(&any->dev);
-
+	dev = class_find_device_by_name(
+		bd_class, OPLUS_BL_DEVICE);
 	if (!dev)
 		return NULL;
 
-	/*
-	 * class_find_device() returns a referenced device.
-	 * Keep that reference for the caller.
-	 */
 	return to_backlight_device(dev);
 }
 
