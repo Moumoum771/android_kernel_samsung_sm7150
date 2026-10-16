@@ -12,12 +12,6 @@
 #define OPLUS_BL_DEVICE "panel0-backlight"
 
 static struct kobject *touchpanel_kobj;
-
-static int match_name(struct device *dev, const void *data)
-{
-	return strcmp(dev_name(dev), (const char *)data) == 0;
-}
-
 /*
  * Return a backlight device with a held device reference.
  * The caller must put_device(&bd->dev) when finished.
