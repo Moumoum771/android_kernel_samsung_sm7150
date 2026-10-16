@@ -72,6 +72,14 @@ jobs:
             "${{ matrix.device.device2 }}" \
             "${{ matrix.device.soc }}"
 
+      - name: Upload vmlinux for debugging
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-vmlinux-debug
+          path: out/vmlinux
+          if-no-files-found: error
+          retention-days: 7     
+
       - name: Generate release notes
         if: matrix.device.name == 'a71'
         run: |
