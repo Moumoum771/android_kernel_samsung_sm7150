@@ -67,12 +67,12 @@ else
     fi
 fi
 
-# Patch fstab, this will change systems filesystem type from erofs to ext4
+# Patch fstab, this will change systems filesystem type from ext4 to erofs
 for fstab in $ramdisk/fstab.*; do
     [ -f "$fstab" ] || continue
     if grep -q "erofs" "$fstab"; then
-        sed -i '/\/system/s/erofs/ext4/' "$fstab"
-        ui_print " - Patched $fstab: system erofs -> ext4";
+        sed -i '/\/system/s/ext4/erofs/' "$fstab"
+        ui_print " - Patched $fstab: system ext4 -> erofs";
     fi
 done
 
