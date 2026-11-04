@@ -583,5 +583,26 @@ enum binder_driver_command_protocol {
 	 */
 };
 
+/* OpenHarmony binder extensions */
+struct binder_access_token {
+	__u64 sender_tokenid;
+	__u64 first_tokenid;
+	__u64 reserved[2];
+};
+
+struct binder_sender_info {
+	__u64 sender_tokenid;
+	__u64 first_tokenid;
+	__u64 reserved[2];
+	__u32 sender_pid_nr;
+	__u32 pad;
+};
+
+#define BINDER_FEATURE_ACCESS_TOKENID  (1ULL << 0)
+#define BINDER_FEATURE_SENDER_INFO     (1ULL << 1)
+#define BINDER_FEATURE_SET        _IOWR('b', 30, __u64)
+#define BINDER_GET_ACCESS_TOKEN   _IOWR('b', 31, struct binder_access_token)
+#define BINDER_GET_SENDER_INFO    _IOWR('b', 32, struct binder_sender_info)
+
 #endif /* _UAPI_LINUX_BINDER_H */
 
