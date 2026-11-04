@@ -5657,6 +5657,38 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		proc->oneway_spam_detection_enabled = (bool)enable;
 		binder_inner_proc_unlock(proc);
 		break;
+			case BINDER_FEATURE_SET: {
+		uint64_t features = BINDER_FEATURE_ACCESS_TOKENID |
+				    BINDER_FEATURE_SENDER_INFO;
+		if (copy_to_user(ubuf, &features, sizeof(features))) {
+			ret = -EFAULT;
+			goto err;
+		}
+		break;
+	}
+	case BINDER_GET_ACCESS_TOKEN: {
+		struct binder_access_token token;
+
+		memset(&token, 0, sizeof(token));
+		token.sender_tokenid = 0;
+		token.first_tokenid = 0;
+		if (copy_to_user(ubuf, &token, sizeof(token))) {
+			ret = -EFAULT;
+			goto err;
+		}
+		break;
+	}
+	case BINDER_GET_SENDER_INFO: {
+		struct binder_sender_info info;
+
+		memset(&info, 0, sizeof(info));
+		info.sender_tokenid = 0;
+		info.sender_pid_nr = 0;
+		if (copy_to_user(ubuf, &info, sizeof(info))) {
+			ret = -EFAULT;
+			goto err;
+		}
+		break;
 	}
 	// [ @SystemFW
 	case BINDER_SET_SYSTEM_SERVER_PID: {
