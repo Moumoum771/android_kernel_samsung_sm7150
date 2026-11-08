@@ -1,4 +1,4 @@
-name: Build
+name: Build BrBL Kernel
 
 on:
   workflow_dispatch:
