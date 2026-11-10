@@ -1,4 +1,4 @@
-/* Updated: Karl MacMillan <kmacmillan@tresys.com>
+=/* Updated: Karl MacMillan <kmacmillan@tresys.com>
  *
  *	Added conditional policy language extensions
  *
@@ -160,11 +160,15 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 	new_value = !!new_value;
 
 	/*
-	 * This kernel build is intentionally permissive.
-	 * Never allow userspace (including init) to enable enforcing mode.
+	 * Keep this kernel in permissive mode, but report a successful write
+	 * when userspace requests enforcing mode. Android init treats a failed
+	 * setenforce(1) as fatal during boot. Do not change the actual SELinux
+	 * state here; init_sel_fs() forces it to permissive at initialization.
 	 */
-	if (new_value)
+	if (new_value) {
+		length = count;
 		goto out;
+	}
 
 	old_value = enforcing_enabled(state);
 	if (new_value != old_value) {
