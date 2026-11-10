@@ -182,19 +182,26 @@ static ssize_t memshare_rd_read(struct file *filep, char __user *buf,
 	int copy_size = 0;
 	int ret = 0;
 
-	if ((filep->f_flags & O_NONBLOCK) && !rd_dev->data_ready)
+	/*
+	 * Do not read stale or uninitialized memory when no dump is available.
+	 * This also applies to blocking file descriptors.
+	 */
+	if (!rd_dev->data_ready)
 		return -EAGAIN;
+
+	/* A zero-sized buffer is not a readable ramdump. */
+	if (!rd_dev->size)
+		return -ENODATA;
+
+	/* EOF: keep the file position at the end instead of rewinding it. */
+	if (*pos >= rd_dev->size) {
+		pr_debug("%s(%s): Ramdump complete. %lld bytes read.", __func__,
+			 rd_dev->name, *pos);
+		return 0;
+	}
 
 	data_left = rd_dev->size - *pos;
 	addr = rd_dev->address + *pos;
-
-	/* EOF check */
-	if (data_left == 0) {
-		pr_info("%s(%s): Ramdump complete. %lld bytes read.", __func__,
-			rd_dev->name, *pos);
-		ret = 0;
-		goto ramdump_done;
-	}
 
 	copy_size = min(count, (size_t)SZ_1M);
 	copy_size = min((unsigned long)copy_size, data_left);
