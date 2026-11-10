@@ -1,4 +1,4 @@
-=/* Updated: Karl MacMillan <kmacmillan@tresys.com>
+/* Updated: Karl MacMillan <kmacmillan@tresys.com>
  *
  *	Added conditional policy language extensions
  *
