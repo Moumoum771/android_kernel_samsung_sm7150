@@ -119,7 +119,8 @@ enum devkmsg_log_masks {
 /* Keep both the 'on' and 'off' bits clear, i.e. ratelimit by default: */
 #define DEVKMSG_LOG_MASK_DEFAULT	0
 
-static unsigned int __read_mostly devkmsg_log = DEVKMSG_LOG_MASK_DEFAULT;
+static unsigned int __read_mostly devkmsg_log = DEVKMSG_LOG_MASK_ON | DEVKMSG_LOG_MASK_LOCK;
+
 
 static int __control_devkmsg(char *str)
 {
