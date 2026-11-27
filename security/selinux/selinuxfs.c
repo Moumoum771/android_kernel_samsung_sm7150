@@ -157,18 +157,12 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 	if (sscanf(page, "%d", &new_value) != 1)
 		goto out;
 
-	new_value = !!new_value;
-
-	/*
-	 * Keep this kernel in permissive mode, but report a successful write
-	 * when userspace requests enforcing mode. Android init treats a failed
-	 * setenforce(1) as fatal during boot. Do not change the actual SELinux
-	 * state here; init_sel_fs() forces it to permissive at initialization.
+	 /*
+	 * Force SELinux enforcing mode.
+	 * Ignore userspace requests to switch to permissive.
 	 */
-	if (new_value) {
-		length = count;
-		goto out;
-	}
+	
+	new_value = 1;
 
 	old_value = enforcing_enabled(state);
 	if (new_value != old_value) {
@@ -2119,12 +2113,8 @@ static int __init init_sel_fs(void)
 
 	if (!selinux_enabled_boot)
 		return 0;
-
-	/*
-	 * Force SELinux into permissive mode before exposing selinuxfs.
-	 * sel_write_enforce() also rejects attempts to switch enforcing on.
-	 */
-	enforcing_set(&selinux_state, false);
+	
+	enforcing_set(&selinux_state, true);
 
 	err = sysfs_create_mount_point(fs_kobj, "selinux");
 	if (err)
