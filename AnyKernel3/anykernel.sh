@@ -83,8 +83,7 @@ cat << 'EOF' > /tmp/anykernel/ramdisk/fstab.default
 /dev/block/platform/soc/1d84000.ufshc/by-name/system     /system                  erofs   ro                                                   wait,first_stage_mount
 /dev/block/platform/soc/1d84000.ufshc/by-name/vendor     /vendor                  erofs   ro                                                   wait,first_stage_mount
 /dev/block/platform/soc/1d84000.ufshc/by-name/omr        /metadata                ext4    noatime,nosuid,nodev,noauto_da_alloc,discard,journal_checksum,data=ordered,errors=panic   wait,formattable,check,first_stage_mount
-/dev/block/platform/soc/1d84000.ufshc/by-name/my_stock   /my_stock                erofs   ro                                                   wait,first_stage_mount
-/dev/block/platform/soc/1d84000.ufshc/by-name/my_product /my_product              erofs   ro                                                   wait,first_stage_mount
+
 
 
 /dev/block/by-name/vbmeta                               /vbmeta                  emmc    defaults                                             first_stage_mount
